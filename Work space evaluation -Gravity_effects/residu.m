@@ -1,0 +1,25 @@
+function res = residu(q,Param)
+q1=q(1:Param.n*Param.na);
+q2=q(Param.n*Param.na+1:2*Param.n*Param.na);
+Y=0:Param.DeltaX2:Param.L;
+g1=Param.g1;
+g2=Param.g2;
+%lambda=q(2*Param.n*Param.na+1 : 2*Param.n*Param.na+Param.n_lambda);
+ for k=1:Param.n_seg+1
+   % Jval1=Jacobian(Y(k),q1,Param);
+   % Jval2=Jacobian(Y(k),q2,Param);
+    phival=Phi(Param.na,Param.n,Y(k),Param.L);
+    xiaval1=Param.xi_a0+phival*q1;
+    xival1=Param.B*xiaval1+Param.B_bar*Param.xi_c;
+    xiaval2=Param.xi_a0+phival*q2;
+    xival2=Param.B*xiaval2+Param.B_bar*Param.xi_c;
+     g1=g1*expm(Hat(xival1)*(Param.DeltaX2));
+     g2=g2*expm(Hat(xival2)*(Param.DeltaX2));
+%      g1=g1*expm2(Hat(xival1)*(Param.DeltaX2),xival1*(Param.DeltaX2));
+%     g2=g2*expm2(Hat(xival2)*(Param.DeltaX2),xival2*(Param.DeltaX2));
+ end
+r1=g1(1:3,4);
+r2=g2(1:3,4);
+r3=(r1+r2)/2;
+r=r3(1:2);
+res=sqrt((r-Param.P_des)'*(r-Param.P_des));
