@@ -1,0 +1,154 @@
+clc
+clear
+tic
+format long
+% Param.E = 10^6; % Young modulu
+% Param.r = 0.01; % rod radius
+% Param.g =0*[0 ; 0 ; 0 ; 0 ; 0; -9.81]; % gravity
+% Param.L = 1; % Rod length
+% Param.A =  pi*Param.r^2; % Cross section area
+% Param.J1 = pi*Param.r^4/2; % Polar inertia moment
+% Param.J2 = pi*Param.r^4/4; % Inertia moment
+% Param.J3 = pi*Param.r^4/4; % Inertia moment
+% %Param.H = diag([Param.G*Param.J1 , Param.E*Param.J2 , Param.E*Param.J3 , Param.E*Param.A , Param.G*Param.A , Param.G*Param.A]); %Hooke tensor
+% Param.H = diag([1.5708e-2 , 0.7854e-2 , 0.7854e-2 , 3.14e2 ,3.14e2 , 3.14e2]); %Hooke tensor
+
+Param.E = 2.563*10^5; % Young modulu
+Param.G=8.543*10^4; % shear modulu
+Param.r = 0.01; % rod radius
+Param.rho = 1.41*10^3; % Mass density
+
+Param.g =[0 ; 0 ; 0 ; 0 ; 0; -9.81]; % gravity
+Param.L = 0.2; % Rod length
+Param.A = pi*Param.r^2; % Cross section area
+Param.J1 = pi*Param.r^4/2; % Polar inertia moment
+Param.J2 = pi*Param.r^4/4; % Inertia moment
+Param.J3 = pi*Param.r^4/4; % Inertia moment
+%Param.mu=1000;
+Param.H = diag([Param.G*Param.J1 , Param.E*Param.J2 , Param.E*Param.J3 , Param.E*Param.A , Param.G*Param.A , Param.G*Param.A]); %Hooke tensor
+
+Param.dX=Param.L/100; %spatial step
+Param.n_X=length(Param.dX:Param.dX:Param.L);
+%Param.mu=10^-3;
+%Tendons parameters
+%Param.Rb= 0.01/2; % Distance between a tendon and the backbone
+Param.Rb= 0.02;
+Param.Tendon_coordinate = @(theta, distance) distance*[0; cos(theta); sin(theta)]; % coordinate of the tendon in a cross-section
+Param.n=3;  %strain modes number
+Param.na=2; %number of actuated strains
+Param.DeltaX=Param.L/200;%length of segments
+Param.DeltaX2=Param.L/100;
+Param.n_seg=length(Param.DeltaX2:Param.DeltaX2:Param.L);
+Param.n_segments=length(Param.DeltaX:Param.DeltaX:Param.L);%number of segments
+Param.n_lambda=3; %dimension of Lambda
+Y=0:Param.DeltaX2:Param.L;
+Param.Tendons_list=zeros(3*(Param.n_seg+1),4);
+for i=1:Param.n_seg+1
+Param.Tendons_list(3*(i-1)+1:3*i,:) = [Param.Tendon_coordinate(0, Param.Rb),Param.Tendon_coordinate(pi/2,Param.Rb),Param.Tendon_coordinate(pi,Param.Rb),Param.Tendon_coordinate(3*pi/2,Param.Rb)]; % Parallel case
+%Param.Tendons_list(3*(i-1)+1:3*i,:) = [Param.Tendon_coordinate(0, Param.Rb*(Param.L-i*Param.DeltaX2)),Param.Tendon_coordinate(pi/2,Param.Rb*(Param.L-i*Param.DeltaX2)),Param.Tendon_coordinate(pi,Param.Rb*(Param.L-i*Param.DeltaX2)),Param.Tendon_coordinate(3*pi/2,Param.Rb*(Param.L-i*Param.DeltaX2))]; % Convergent routing
+%Param.Tendons_list(3*(i-1)+1:3*i,:) = [Param.Tendon_coordinate(0, Param.Rb*(Param.L-2*i*Param.DeltaX2)),Param.Tendon_coordinate(pi/2,Param.Rb*(Param.L-2*i*Param.DeltaX2)),Param.Tendon_coordinate(pi,Param.Rb*(Param.L-2*i*Param.DeltaX2)),Param.Tendon_coordinate(3*pi/2,Param.Rb*(Param.L-2*i*Param.DeltaX2))]; % Convergent routing
+%Parallel truncated
+%if (i-1)*Param.DeltaX2<Param.L/2
+%    Param.Tendons_list(3*(i-1)+1:3*i,:) = [Param.Tendon_coordinate(0, Param.Rb),Param.Tendon_coordinate(pi/2,Param.Rb),Param.Tendon_coordinate(pi,Param.Rb),Param.Tendon_coordinate(3*pi/2,Param.Rb)];
+%end
+end
+%Param.Forces_Tendons = zeros(1,4); % tension in each tendon
+Param.Forces_Tendons=[0,0,1,0;0,0,0,0];
+
+Param.Ftip=0*[0;-1/sqrt(2);1/sqrt(2);0;0;0];
+%Param.Forces_Tendons(1)=1;
+
+
+%Initial conditions
+Param.g0=eye(4);
+Param.g1=eye(4);
+Param.y2=0.05;
+Param.g1(1:3,4)=[0;Param.y2;0];
+%Param.B =[eye(3);zeros(3)]; 
+%Param.B_bar = [zeros(3);eye(3)];
+% Param.B     = [0 0 0;1 0 0;0 0 0;0 1 0;0 0 0;0 0 1];
+% Param.B_bar = [1 0 0;0 0 0;0 1 0;0 0 0;0 0 1;0 0 0];
+% Param.xi_0=[0;0;0;1;0;0];
+% Param.xi_a0=Param.B'*Param.xi_0;
+% Param.xi_c=[0;0;0];
+
+% Param.B     = [0;1;0;0;0;0];
+% Param.B_bar = [1 0 0 0 0;0 0 0 0 0;0 1 0 0 0;0 0 1 0 0;0 0 0 1 0;0 0 0 0 1];
+% Param.xi_0=[0;0;0;1;0;0];
+% Param.xi_a0=Param.B'*Param.xi_0;
+% Param.xi_c=[0;0;1;0;0];
+
+Param.B     = [0 0;0 0;1 0;0 1;0 0;0 0];
+Param.B_bar = [1 0 0 0;0 1 0 0;0 0 0 0;0 0 0 0;0 0 1 0;0 0 0 1];
+Param.xi_0=[0;0;0;1;0;0];
+Param.xi_a0=Param.B'*Param.xi_0;
+Param.xi_c=[0;0;0;0];
+
+Param.Ha=Param.B'*Param.H*Param.B;%the matrix of the reduced Hooke coefficients
+
+syms q1 q2 q3 q4 q5 q6 q7 q8 q9 q10 q11 q12 ql1 ql2 
+ql1=[q1;q2;q3;q4;q5;q6];
+ql2=[q7;q8;q9;q10;q11;q12];
+g1_L=Geometric_model_leg1(Param.L,ql1,Param);
+g2_L=Geometric_model_leg2(Param.L,ql2,Param);
+%g1_L([1;2;3;4;5;6])
+r1_L=g1_L(1:3,4);
+r2_L=g2_L(1:3,4);
+R1_L=g1_L(1:3,1:3);
+R2_L=g2_L(1:3,1:3);
+a=(r1_L(1)-r2_L(1))^2;
+%da=diff(a,q1);
+b=(r1_L(2)-r2_L(2))^2;
+%db=diff(b,q1);
+Psi1=(a+b)^(1/2)-Param.y2;
+Psi2=[1,0,0]*(R1_L'*(r1_L-r2_L));
+Psi3=[1,0,0]*(R2_L'*(r1_L-r2_L));
+
+Psi1_q1=diff(Psi1,q1);
+Psi1_q2=diff(Psi1,q2);
+Psi1_q3=diff(Psi1,q3);
+Psi1_q4=diff(Psi1,q4);
+Psi1_q5=diff(Psi1,q5);
+Psi1_q6=diff(Psi1,q6);
+Psi1_q7=diff(Psi1,q7);
+Psi1_q8=diff(Psi1,q8);
+Psi1_q9=diff(Psi1,q9);
+Psi1_q10=diff(Psi1,q10);
+Psi1_q11=diff(Psi1,q11);
+Psi1_q12=diff(Psi1,q12);
+
+Psi2_q1=diff(Psi2,q1);
+Psi2_q2=diff(Psi2,q2);
+Psi2_q3=diff(Psi2,q3);
+Psi2_q4=diff(Psi2,q4);
+Psi2_q5=diff(Psi2,q5);
+Psi2_q6=diff(Psi2,q6);
+Psi2_q7=diff(Psi2,q7);
+Psi2_q8=diff(Psi2,q8);
+Psi2_q9=diff(Psi2,q9);
+Psi2_q10=diff(Psi2,q10);
+Psi2_q11=diff(Psi2,q11);
+Psi2_q12=diff(Psi2,q12);
+
+Psi3_q1=diff(Psi3,q1);
+Psi3_q2=diff(Psi3,q2);
+Psi3_q3=diff(Psi3,q3);
+Psi3_q4=diff(Psi3,q4);
+Psi3_q5=diff(Psi3,q5);
+Psi3_q6=diff(Psi3,q6);
+Psi3_q7=diff(Psi3,q7);
+Psi3_q8=diff(Psi3,q8);
+Psi3_q9=diff(Psi3,q9);
+Psi3_q10=diff(Psi3,q10);
+Psi3_q11=diff(Psi3,q11);
+Psi3_q12=diff(Psi3,q12);
+%len=sqrt((r1_L(1)-r2_L(1))^2 + sqrt((r1_L(2)-r2_L(2))^2));
+%a=(r1_L(1)-r2_L(1))^2;
+%da=diff(a,q1);
+%b=(r1_L(2)-r2_L(2))^2;
+%db=diff(b,q1);
+%len=sqrt(a+b);
+%d1=(diff(a,q1)+diff(b,q1))/(2*(len));
+%subs(g1_L,q,[1;2;3;4;5;6])
+
+%Idée: séparer g en translation et rotation 
